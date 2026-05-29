@@ -182,7 +182,6 @@ class AudioManager:
         """Unload all stream"""
         for audio in self._audio.values():
             audio.unload()
-        self._audio.clear()
 
     def update(self):
         """Update all stream"""
