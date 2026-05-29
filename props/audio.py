@@ -78,6 +78,10 @@ class AudioHandler(ABC, Generic[DataType]):
             raise ValueError("Not initialized")
         return self._data
 
+    @property
+    def loaded(self):
+        """is stream loaded?"""
+        return self._data is not None
 
 HandlerType = TypeVar("HandlerType", bound=AudioHandler[Any])
 
@@ -102,6 +106,7 @@ class SoundHandler(AudioHandler[Sound]):
     def unload(self):
         """Unload sound"""
         unload_sound(self.data)
+        self._data = None
 
     def play(self):
         """Play sound"""
@@ -135,6 +140,7 @@ class MusicHandler(AudioHandler[Music]):
     def unload(self):
         """Unload music"""
         unload_music_stream(self.data)
+        self._data = None
 
     def play(self):
         """Play music"""
@@ -181,7 +187,9 @@ class AudioManager:
     def update(self):
         """Update all stream"""
         for audio in self._audio.values():
-            if isinstance(audio, MusicHandler):
+            if not isinstance(audio, MusicHandler):
+                continue
+            if audio.loaded:
                 audio.update()
 
     def remove(self, key: str):
