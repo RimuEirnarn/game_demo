@@ -7,14 +7,15 @@ from props.audio import (
     MusicHandler
 )
 from props.runner import draw
-
+from props.config import ConfigSchema
 
 class Game:
     """Game instance"""
-    def __init__(self):
+    def __init__(self, config: ConfigSchema):
         self.soundmgr = AudioManager({
             "newpage": MusicHandler("external/NewPage.mp3", 1)
         })
+        self.config = config
 
     def load(self):
         """load"""
@@ -29,14 +30,17 @@ class Game:
 
     def draw(self):
         """Draw"""
+        width, height = self.config['resolution']
         pr.clear_background(pr.BLACK)
+        text = "Hello, Cyrene~"
+        text_size = pr.measure_text_ex(pr.get_font_default(), text, 20, 2)
 
         pr.draw_text(
             "Hello, Cyrene~",
-            300,
-            225,
+            int((width // 2) - (text_size.x // 2)),
+            int((height // 2) - (text_size.y // 2)),
             20,
-            pr.LIGHTGRAY
+            (0xff, 0xc5, 0xd3, 0xff)
         )
 
     def run(self):
