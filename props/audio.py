@@ -1,12 +1,30 @@
 # pylint: disable=no-name-in-module,invalid-name,unused-import
-from typing import  Any, TypeVar, Generic
+from typing import Any, TypeVar, Generic
 from abc import ABC, abstractmethod
-from pyray import load_sound, unload_sound, set_sound_volume, Sound, load_music_stream, unload_music_stream, set_music_volume, Music, play_music_stream, stop_music_stream, play_sound, stop_sound, update_music_stream, update_sound
+from pyray import (
+    load_sound,
+    unload_sound,
+    set_sound_volume,
+    Sound,
+    load_music_stream,
+    unload_music_stream,
+    set_music_volume,
+    Music,
+    play_music_stream,
+    stop_music_stream,
+    play_sound,
+    stop_sound,
+    update_music_stream,
+    update_sound,
+    is_music_stream_playing,
+)
 
 DataType = TypeVar("DataType")
 
+
 class AudioHandler(ABC, Generic[DataType]):
     """Base Audio handler"""
+
     def __init__(self, path: str, volume: float = 0) -> None:
         self._path = path
         self._volume = volume
@@ -33,6 +51,11 @@ class AudioHandler(ABC, Generic[DataType]):
         """Update Audio stream"""
 
     @property
+    def is_playing(self):
+        """Is this stream playing?"""
+        raise NotImplementedError
+
+    @property
     def volume(self):
         """Volume"""
         return self._volume
@@ -55,13 +78,21 @@ class AudioHandler(ABC, Generic[DataType]):
             raise ValueError("Not initialized")
         return self._data
 
+
 HandlerType = TypeVar("HandlerType", bound=AudioHandler[Any])
+
 
 class SoundHandler(AudioHandler[Sound]):
     """Sound handler"""
+
     def __init__(self, path: str, volume: float = 0) -> None:
         super().__init__(path, volume)
         self._data: Sound | None = None
+
+    @property
+    def is_playing(self):
+        """Is this sound playing?"""
+        return False
 
     def load(self):
         """Load sound"""
@@ -83,11 +114,18 @@ class SoundHandler(AudioHandler[Sound]):
         """Stop sound"""
         stop_sound(self.data)
 
+
 class MusicHandler(AudioHandler[Music]):
     """Music Handler"""
+
     def __init__(self, path: str, volume: float = 0) -> None:
         super().__init__(path, volume)
         self._data: Music | None = None
+
+    @property
+    def is_playing(self):
+        """Is this music playing?"""
+        return is_music_stream_playing(self.data)
 
     def load(self):
         """Load music"""
@@ -110,14 +148,18 @@ class MusicHandler(AudioHandler[Music]):
         """Stop music"""
         stop_music_stream(self.data)
 
+
 class AudioManager:
     """Audio Manager"""
-    def __init__(self, initializers: dict[str, HandlerType] | None = None, volume: float = 1.0):
+
+    def __init__(
+        self, initializers: dict[str, HandlerType] | None = None, volume: float = 1.0
+    ):
         self._audio: dict[str, AudioHandler[Any]] = {}
         self._initializers = initializers
         self._volume = volume
 
-    def register(self, key: str, handler: HandlerType): # type: ignore
+    def register(self, key: str, handler: HandlerType):  # type: ignore
         """Register an audio"""
         self._audio[key] = handler
         handler.load()
@@ -142,9 +184,15 @@ class AudioManager:
             if isinstance(audio, MusicHandler):
                 audio.update()
 
+    def remove(self, key: str):
+        """Remove an audio"""
+        del self._audio[key]
+
     def get(self, name: str, expected_type: type[HandlerType]) -> HandlerType:
         """Get a stream"""
         data = self._audio[name]
         if not isinstance(data, expected_type):
-            raise TypeError(f"{repr(data)} is not an object of {expected_type.__name__}")
+            raise TypeError(
+                f"{repr(data)} is not an object of {expected_type.__name__}"
+            )
         return data
