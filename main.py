@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import pyray as pr
 from props.game import Game
 from props.runner import ModuleFlag, initialize

@@ -1,3 +1,4 @@
+# pylint: disable=all
 from typing import Callable, TypeVar
 from contextlib import contextmanager
 from functools import wraps
