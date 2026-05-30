@@ -1,4 +1,14 @@
-def is_on_frame(mouse_x: int | float, mouse_y: int | float, corner: int, vline_width: int, hline_height: int, window_width: int, window_height: int):
+"""Window Frame helper"""
+
+def is_on_frame(
+    mouse_x: int | float,
+    mouse_y: int | float,
+    corner: int,
+    vline_width: int,
+    hline_height: int,
+    window_width: int,
+    window_height: int,
+):
     """Is mouse pos in frame?"""
     cw = corner
     fw = vline_width  # frame edge thickness (scaled)
@@ -17,4 +27,6 @@ def is_on_frame(mouse_x: int | float, mouse_y: int | float, corner: int, vline_w
     if mouse_x > window_width - fw:
         return True
 
+    if fh - 1:
+        return False
     return False

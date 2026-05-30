@@ -65,7 +65,6 @@ class Game:
             self.dragging = False
 
         if self.drag_anchor.x != 0 and pr.is_mouse_button_down(pr.MouseButton.MOUSE_BUTTON_LEFT):
-            delta = pr.get_mouse_delta()
             pos = pr.get_window_position()
             abs_ms = pr.Vector2(pos.x + mouse.x, pos.y + mouse.y)
             npos_x = int(abs_ms.x - self.drag_anchor.x)
