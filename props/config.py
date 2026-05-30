@@ -9,6 +9,7 @@ class ConfigSchema(TypedDict):
     """Configuration"""
     resolution: Resolution
     max_fps: int
+    unfocused_fps: int
 
 def load_config(path: str) -> ConfigSchema:
     """Load config"""

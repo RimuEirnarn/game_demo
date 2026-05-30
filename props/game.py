@@ -9,6 +9,9 @@ from props.draw import draw_tiled_h, draw_tiled_v
 from props.frame_helper import is_on_frame
 
 
+INACTIVE_PREFIX = "inactive_"
+ACTIVE_PREFIX = ""
+
 class Game:
     """Game instance"""
 
@@ -17,7 +20,9 @@ class Game:
             {"newpage": MusicHandler("external/NewPage.mp3", 1)}
         )
         self.config = config
-        self.textures: dict[str, pr.Texture] = {}
+        self.active_frames: dict[str, pr.Texture] = {}
+        self.inactive_frames: dict[str, pr.Texture] = {}
+        self.frames = self.active_frames
         self.scale = 4
         self.corner = 8 * self.scale
         self.hline_w = 4 * self.scale
@@ -27,6 +32,7 @@ class Game:
         self.width, self.height = config["resolution"]
         self.dragging = False
         self.drag_anchor = pr.Vector2(0, 0)
+        self.clocked_down = False
 
     def load(self):
         """load"""
@@ -35,21 +41,27 @@ class Game:
         bgm = self.soundmgr.get("newpage", MusicHandler)
         bgm.play()
         for key, path in (
-            ("frame_tl", "assets/window_topleft.png"),
-            ("frame_tr", "assets/window_topright.png"),
-            ("frame_bl", "assets/window_botleft.png"),
-            ("frame_br", "assets/window_botright.png"),
-            ("frame_v", "assets/window_vertical.png"),
-            ("frame_h", "assets/window_horizontal.png"),
+            ("frame_tl", "assets/{prefix}window_topleft.png"),
+            ("frame_tr", "assets/{prefix}window_topright.png"),
+            ("frame_bl", "assets/{prefix}window_botleft.png"),
+            ("frame_br", "assets/{prefix}window_botright.png"),
+            ("frame_v", "assets/{prefix}window_vertical.png"),
+            ("frame_h", "assets/{prefix}window_horizontal.png"),
         ):
-            texture = pr.load_texture(path)
-            pr.set_texture_filter(texture, pr.TextureFilter.TEXTURE_FILTER_POINT)
-            self.textures[key] = texture
+
+            active_texture = pr.load_texture(path.format(prefix=ACTIVE_PREFIX))
+            pr.set_texture_filter(active_texture, pr.TextureFilter.TEXTURE_FILTER_POINT)
+            self.active_frames[key] = active_texture
+
+            inactive_texture = pr.load_texture(path.format(prefix=INACTIVE_PREFIX))
+            pr.set_texture_filter(inactive_texture, pr.TextureFilter.TEXTURE_FILTER_POINT)
+            self.inactive_frames[key] = inactive_texture
 
     def update(self):
         """Update"""
         self.soundmgr.update()
         mouse = pr.get_mouse_position()
+        drag_anchor_is_empty = self.drag_anchor.x == 0 and self.drag_anchor.y == 0
         if pr.is_mouse_button_pressed(pr.MouseButton.MOUSE_BUTTON_LEFT) and is_on_frame(
             mouse.x,
             mouse.y,
@@ -63,13 +75,30 @@ class Game:
 
         if pr.is_mouse_button_released(pr.MouseButton.MOUSE_BUTTON_LEFT):
             self.dragging = False
+            self.drag_anchor = pr.Vector2(0, 0)
 
-        if self.drag_anchor.x != 0 and pr.is_mouse_button_down(pr.MouseButton.MOUSE_BUTTON_LEFT):
+        if not drag_anchor_is_empty and pr.is_mouse_button_down(
+            pr.MouseButton.MOUSE_BUTTON_LEFT
+        ):
             pos = pr.get_window_position()
             abs_ms = pr.Vector2(pos.x + mouse.x, pos.y + mouse.y)
             npos_x = int(abs_ms.x - self.drag_anchor.x)
             npos_y = int(abs_ms.y - self.drag_anchor.y)
-            pr.set_window_position(npos_x, npos_y   )
+            pr.set_window_position(npos_x, npos_y)
+
+        if (
+            pr.is_window_hidden()
+            or pr.is_window_minimized()
+            or not pr.is_window_focused()
+        ) and not self.clocked_down:
+            pr.set_target_fps(self.config["unfocused_fps"])
+            self.clocked_down = True
+            self.frames = self.inactive_frames
+
+        if pr.is_window_focused() and self.clocked_down:
+            self.clocked_down = False
+            self.frames = self.active_frames
+            pr.set_target_fps(self.config['max_fps'])
 
     def draw(self):
         """Draw"""
@@ -93,16 +122,17 @@ class Game:
             20,
             (0xFF, 0xC5, 0xD3, 0xFF),
         )
+        pr.draw_fps(2 + self.vline_w, 2 + self.hline_h)
         self.draw_frame()
 
     def draw_frame(self):
         """Frame"""
-        hline = self.textures["frame_h"]
-        vline = self.textures["frame_v"]
-        tl = self.textures["frame_tl"]
-        tr = self.textures["frame_tr"]
-        bl = self.textures["frame_bl"]
-        br = self.textures["frame_br"]
+        hline = self.frames["frame_h"]
+        vline = self.frames["frame_v"]
+        tl = self.frames["frame_tl"]
+        tr = self.frames["frame_tr"]
+        bl = self.frames["frame_bl"]
+        br = self.frames["frame_br"]
         w, h = self.width, self.height
         scale = self.scale
         cw = self.corner  # scaled corner width/height = 32
@@ -142,5 +172,5 @@ class Game:
     def unload(self):
         """Unload"""
         self.soundmgr.unload()
-        for texture in self.textures.values():
+        for texture in self.active_frames.values():
             pr.unload_texture(texture)
