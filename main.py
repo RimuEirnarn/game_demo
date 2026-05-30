@@ -23,12 +23,11 @@ def main():
         config['resolution'][0],
         config['resolution'][1],
         "Hello, Cyrene~",
-        (ModuleFlag.audio,)
+        (ModuleFlag.audio, ModuleFlag.headless, ModuleFlag.transparent, ModuleFlag.msaa_4x)
     ):
         pr.set_target_fps(config['max_fps'])
-
-    game.load()
-    game.run()
+        game.load()
+        game.run()
 
 
 if __name__ == "__main__":
